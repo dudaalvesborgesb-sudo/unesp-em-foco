@@ -3617,8 +3617,58 @@
       let r = te(),
         z = null,
         x = new Date();
+      restoreConfirmedStudyHistory();
       x.setDate(1);
       let q = g(new Date());
+      function restoreConfirmedStudyHistory() {
+        const params = new URLSearchParams(location.search),
+          recoveryCode = params.get("restaurar");
+        if (recoveryCode !== "duda-estudos-2026-09-01") return;
+        const confirmedStudies = [
+          {
+            topic: "hist-0",
+            session: "2026-08-25-a",
+            startedAt: "2026-08-25",
+          },
+          {
+            topic: "geo-0",
+            session: "2026-08-26-a",
+            startedAt: "2026-08-26",
+          },
+          {
+            topic: "hist-1",
+            session: "2026-08-27-a",
+            startedAt: "2026-08-27",
+          },
+          {
+            topic: "geo-1",
+            session: "2026-08-28-a",
+            startedAt: "2026-08-28",
+          },
+        ];
+        r.completedTopics ||= {};
+        r.completedSessions ||= {};
+        r.reviewPlans ||= {};
+        confirmedStudies.forEach(({ topic, session, startedAt }) => {
+          r.completedTopics[topic] = true;
+          r.completedSessions[session] = true;
+          const previous = r.reviewPlans[topic] || {};
+          r.reviewPlans[topic] = {
+            ...previous,
+            startedAt,
+            checks: previous.checks || {},
+          };
+        });
+        r = O(r);
+        localStorage.setItem(V, JSON.stringify(r));
+        params.delete("restaurar");
+        const cleanQuery = params.toString();
+        history.replaceState(
+          {},
+          "",
+          `${location.pathname}${cleanQuery ? `?${cleanQuery}` : ""}${location.hash}`,
+        );
+      }
       function te() {
         try {
           const current = JSON.parse(localStorage.getItem(V) || "{}"),
