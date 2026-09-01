@@ -3623,10 +3623,32 @@
         try {
           const current = JSON.parse(localStorage.getItem(V) || "{}"),
             legacy = JSON.parse(localStorage.getItem(ie) || "{}"),
-            recoveryKey = "duda-unesp-recovery-v1-2026-09-01";
+            recoveryKey = "duda-unesp-recovery-all-v2-2026-09-01",
+            storedCopies = JSON.parse(
+              localStorage.getItem("duda-unesp-planner-recovery-copies") ||
+                "[]",
+            ),
+            archivedStates = (Array.isArray(storedCopies) ? storedCopies : [])
+              .map((copy) => {
+                try {
+                  return typeof copy?.state === "string"
+                    ? JSON.parse(copy.state)
+                    : copy?.state;
+                } catch {
+                  return null;
+                }
+              })
+              .filter((state) => state && typeof state === "object")
+              .reverse();
           let restored = O({ ...N, ...current });
-          if (!localStorage.getItem(recoveryKey) && hasSavedProgress(legacy)) {
-            restored = mergeProgressStates(restored, legacy);
+          if (!localStorage.getItem(recoveryKey)) {
+            restored = [legacy, ...archivedStates, current].reduce(
+              (merged, savedState) =>
+                hasSavedProgress(savedState)
+                  ? mergeProgressStates(merged, savedState)
+                  : merged,
+              structuredClone(N),
+            );
             localStorage.setItem(recoveryKey, "done");
             localStorage.setItem(V, JSON.stringify(restored));
           }
