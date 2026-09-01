@@ -3611,6 +3611,7 @@
         cloudUnsubscribe = null,
         cloudWriteTimer = null,
         cloudReady = false,
+        cloudDocumentExists = false,
         applyingCloudState = false,
         cloudStatus = "local";
       let r = te(),
@@ -3620,13 +3621,81 @@
       let q = g(new Date());
       function te() {
         try {
-          const e = localStorage.getItem(V);
-          if (e) return O({ ...N, ...JSON.parse(e) });
-          const a = JSON.parse(localStorage.getItem(ie) || "{}");
-          return O({ ...N, ...a, completedTopics: {} });
+          const current = JSON.parse(localStorage.getItem(V) || "{}"),
+            legacy = JSON.parse(localStorage.getItem(ie) || "{}"),
+            recoveryKey = "duda-unesp-recovery-v1-2026-09-01";
+          let restored = O({ ...N, ...current });
+          if (!localStorage.getItem(recoveryKey) && hasSavedProgress(legacy)) {
+            restored = mergeProgressStates(restored, legacy);
+            localStorage.setItem(recoveryKey, "done");
+            localStorage.setItem(V, JSON.stringify(restored));
+          }
+          return restored;
         } catch {
           return structuredClone(N);
         }
+      }
+      function mergeTrueMaps(first = {}, second = {}) {
+        const merged = { ...first };
+        Object.entries(second).forEach(([key, value]) => {
+          if (value || !(key in merged)) merged[key] = value;
+        });
+        return merged;
+      }
+      function mergeArraysById(first = [], second = []) {
+        const merged = new Map();
+        [...first, ...second].forEach((item) => {
+          const key = item?.id || JSON.stringify(item);
+          merged.set(key, { ...(merged.get(key) || {}), ...item });
+        });
+        return [...merged.values()];
+      }
+      function mergeReviewPlans(first = {}, second = {}) {
+        const merged = { ...first };
+        Object.entries(second).forEach(([key, plan]) => {
+          const previous = merged[key] || {};
+          merged[key] = {
+            ...previous,
+            ...plan,
+            details: { ...(previous.details || {}), ...(plan.details || {}) },
+            checks: mergeTrueMaps(previous.checks, plan.checks),
+          };
+        });
+        return merged;
+      }
+      function mergeProgressStates(first = {}, second = {}) {
+        const firstAttempt = first.examAttempt,
+          secondAttempt = second.examAttempt,
+          examAttempt =
+            Number(secondAttempt?.startedAt || 0) >
+            Number(firstAttempt?.startedAt || 0)
+              ? secondAttempt
+              : firstAttempt || secondAttempt || null;
+        return O({
+          ...N,
+          ...first,
+          ...second,
+          completedTopics: mergeTrueMaps(
+            first.completedTopics,
+            second.completedTopics,
+          ),
+          completedSessions: mergeTrueMaps(
+            first.completedSessions,
+            second.completedSessions,
+          ),
+          customSessions: mergeArraysById(
+            first.customSessions,
+            second.customSessions,
+          ),
+          simulations: mergeArraysById(first.simulations, second.simulations),
+          reviewPlans: mergeReviewPlans(first.reviewPlans, second.reviewPlans),
+          phase2Checks: mergeTrueMaps(first.phase2Checks, second.phase2Checks),
+          phase2Sessions: mergeArraysById(
+            first.phase2Sessions,
+            second.phase2Sessions,
+          ),
+          examAttempt,
+        });
       }
       function O(e) {
         return (
@@ -3648,11 +3717,27 @@
       }
       function l() {
         localStorage.setItem(V, JSON.stringify(r));
+        saveRecoveryCopy(r);
         scheduleCloudSave();
       }
+      function saveRecoveryCopy(state) {
+        try {
+          const key = "duda-unesp-planner-recovery-copies",
+            copies = JSON.parse(localStorage.getItem(key) || "[]"),
+            serialized = JSON.stringify(cloudStateFrom(state));
+          if (copies[0]?.state === serialized) return;
+          copies.unshift({ savedAt: Date.now(), state: serialized });
+          localStorage.setItem(key, JSON.stringify(copies.slice(0, 8)));
+        } catch (error) {
+          console.warn("Não foi possível criar a cópia local:", error);
+        }
+      }
+      function cloudStateFrom(state) {
+        const { activeView, simTab, ...progress } = state;
+        return progress;
+      }
       function cloudState() {
-        const { activeView, simTab, ...state } = r;
-        return state;
+        return cloudStateFrom(r);
       }
       function hasSavedProgress(state = r) {
         return Boolean(
@@ -3707,6 +3792,7 @@
       function scheduleCloudSave() {
         if (!cloudUser || !cloudReady || applyingCloudState || !cloudDocument)
           return;
+        if (!cloudDocumentExists && !hasSavedProgress()) return;
         updateCloudStatus("saving");
         clearTimeout(cloudWriteTimer);
         cloudWriteTimer = setTimeout(saveCloudState, 450);
@@ -3722,6 +3808,7 @@
             },
             { merge: true },
           );
+          cloudDocumentExists = true;
           updateCloudStatus("synced");
         } catch (error) {
           console.error("Não foi possível sincronizar:", error);
@@ -3732,6 +3819,7 @@
         if (!state || typeof state !== "object") return;
         const activeView = r.activeView,
           simTab = r.simTab;
+        saveRecoveryCopy(r);
         applyingCloudState = true;
         r = O({ ...N, ...state, activeView, simTab });
         localStorage.setItem(V, JSON.stringify(r));
@@ -3740,6 +3828,7 @@
       }
       async function connectCloudUser(user) {
         cloudReady = false;
+        cloudDocumentExists = false;
         cloudUser = user;
         updateCloudStatus("connecting");
         cloudUnsubscribe?.();
@@ -3753,22 +3842,40 @@
         try {
           const snapshot = await cloudApi.getDoc(cloudDocument);
           if (snapshot.exists() && snapshot.data()?.state) {
-            applyRemoteState(snapshot.data().state);
+            const remoteState = snapshot.data().state,
+              mergedState = mergeProgressStates(remoteState, r);
+            cloudDocumentExists = true;
+            applyRemoteState(mergedState);
+            if (JSON.stringify(remoteState) !== JSON.stringify(cloudState())) {
+              await cloudApi.setDoc(
+                cloudDocument,
+                {
+                  state: cloudState(),
+                  updatedAt: cloudApi.serverTimestamp(),
+                },
+                { merge: true },
+              );
+            }
           } else if (hasSavedProgress()) {
             await cloudApi.setDoc(cloudDocument, {
               state: cloudState(),
               updatedAt: cloudApi.serverTimestamp(),
             });
+            cloudDocumentExists = true;
           }
           cloudReady = true;
           cloudUnsubscribe = cloudApi.onSnapshot(
             cloudDocument,
             (nextSnapshot) => {
               if (!nextSnapshot.exists() || !nextSnapshot.data()?.state) return;
-              const incoming = nextSnapshot.data().state;
+              cloudDocumentExists = true;
+              const incoming = nextSnapshot.data().state,
+                merged = mergeProgressStates(incoming, r);
+              if (JSON.stringify(merged) !== JSON.stringify(cloudState()))
+                applyRemoteState(merged);
               if (JSON.stringify(incoming) !== JSON.stringify(cloudState()))
-                applyRemoteState(incoming);
-              updateCloudStatus("synced");
+                scheduleCloudSave();
+              else updateCloudStatus("synced");
             },
             (error) => {
               console.error("Sincronização interrompida:", error);
@@ -3843,6 +3950,7 @@
             cloudUnsubscribe?.();
             cloudUnsubscribe = null;
             cloudDocument = null;
+            cloudDocumentExists = false;
             cloudUser = null;
             cloudReady = false;
             updateCloudStatus("local");
