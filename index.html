@@ -3732,9 +3732,26 @@
           console.warn("Não foi possível criar a cópia local:", error);
         }
       }
-      function cloudStateFrom(state) {
+      function cloudStateFrom(state = {}) {
         const { activeView, simTab, ...progress } = state;
         return progress;
+      }
+      function stableStateValue(value) {
+        if (Array.isArray(value)) return value.map(stableStateValue);
+        if (value && typeof value === "object")
+          return Object.keys(value)
+            .sort()
+            .reduce((sorted, key) => {
+              sorted[key] = stableStateValue(value[key]);
+              return sorted;
+            }, {});
+        return value;
+      }
+      function sameCloudProgress(first, second) {
+        return (
+          JSON.stringify(stableStateValue(cloudStateFrom(first))) ===
+          JSON.stringify(stableStateValue(cloudStateFrom(second)))
+        );
       }
       function cloudState() {
         return cloudStateFrom(r);
@@ -3846,7 +3863,7 @@
               mergedState = mergeProgressStates(remoteState, r);
             cloudDocumentExists = true;
             applyRemoteState(mergedState);
-            if (JSON.stringify(remoteState) !== JSON.stringify(cloudState())) {
+            if (!sameCloudProgress(remoteState, cloudState())) {
               await cloudApi.setDoc(
                 cloudDocument,
                 {
@@ -3870,11 +3887,10 @@
               if (!nextSnapshot.exists() || !nextSnapshot.data()?.state) return;
               cloudDocumentExists = true;
               const incoming = nextSnapshot.data().state,
-                merged = mergeProgressStates(incoming, r);
-              if (JSON.stringify(merged) !== JSON.stringify(cloudState()))
-                applyRemoteState(merged);
-              if (JSON.stringify(incoming) !== JSON.stringify(cloudState()))
-                scheduleCloudSave();
+                current = cloudState(),
+                merged = cloudStateFrom(mergeProgressStates(incoming, current));
+              if (!sameCloudProgress(merged, current)) applyRemoteState(merged);
+              if (!sameCloudProgress(incoming, merged)) scheduleCloudSave();
               else updateCloudStatus("synced");
             },
             (error) => {
