@@ -1,0 +1,56 @@
+name: Fix countdown placement by phase
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-countdown-placement.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Place countdowns correctly
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          p = Path('index.html')
+          text = p.read_text(encoding='utf-8')
+
+          # Remove the duplicated sidebar countdown.
+          text = text.replace('      <div class="side-card"><small>1ª fase em</small><strong>${ne()} dias</strong><small>22 de novembro</small></div>\n', '')
+
+          # Remove the global pair of countdown cards under the top bar.
+          text = re.sub(
+              r'\n\s*<div class="exam-countdowns" style="display:flex;flex-wrap:wrap;gap:12px;margin:0 0 20px;">.*?</div>\n\s*<section class="view \$\{r\.activeView === "today" \? "active" : ""\}" id="today-view">\$\{_\(\)\}</section>',
+              '\n      <section class="view ${r.activeView === "today" ? "active" : ""}" id="today-view">${_()}</section>',
+              text,
+              count=1,
+              flags=re.S,
+          )
+
+          # Add only the first-phase countdown inside the daily-focus card header.
+          old = '<div class="focus-header"><div><span class="eyebrow">${i ? "Foco de hoje" : "Foco do dia selecionado"} · cronograma completo</span><h3>${w(o, { weekday: "long", day: "numeric", month: "long" })}</h3><p>${n.total ? "Marque as aulas feitas aqui e as revisões serão agendadas automaticamente." : i ? "Hoje é dia de respirar e organizar a próxima semana." : "Não há aulas programadas para esta data."}</p></div><div class="focus-status"><div class="focus-count">${n.done} de ${n.total} concluídos</div>${i ? "" : \'<button class="focus-today-btn" data-back-today>Voltar para hoje</button>\'}</div></div>'
+
+          new = '<div class="focus-header"><div><span class="eyebrow">${i ? "Foco de hoje" : "Foco do dia selecionado"} · cronograma completo</span><h3>${w(o, { weekday: "long", day: "numeric", month: "long" })}</h3><p>${n.total ? "Marque as aulas feitas aqui e as revisões serão agendadas automaticamente." : i ? "Hoje é dia de respirar e organizar a próxima semana." : "Não há aulas programadas para esta data."}</p></div><div class="focus-status"><div class="focus-count">${n.done} de ${n.total} concluídos</div><div style="margin-top:8px;padding:9px 12px;border:1px solid var(--line);border-radius:12px;background:var(--card);text-align:center"><small style="display:block;color:var(--muted);font-weight:700">1ª fase em</small><strong style="display:block;font-size:24px;line-height:1.15;margin:3px 0">${ne()} dias</strong><small style="color:var(--muted)">22 de novembro</small></div>${i ? "" : \'<button class="focus-today-btn" data-back-today>Voltar para hoje</button>\'}</div></div>'
+
+          if old not in text:
+              raise SystemExit('Focus header marker not found; no change made.')
+          text = text.replace(old, new, 1)
+
+          p.write_text(text, encoding='utf-8')
+          PY
+      - name: Remove one-time workflow
+        run: rm -f .github/workflows/fix-countdown-placement.yml
+      - name: Commit changes
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html .github/workflows/fix-countdown-placement.yml
+          git commit -m 'Place first-phase countdown in daily focus only'
+          git push
