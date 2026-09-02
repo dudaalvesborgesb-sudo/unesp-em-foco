@@ -1,0 +1,52 @@
+name: Move UNESP countdowns into daily focus
+
+on:
+  push:
+    paths:
+      - '.github/workflows/move-countdowns-home.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  move:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Move countdowns into home focus
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path('index.html')
+          text = path.read_text(encoding='utf-8')
+
+          # Remove the countdown block that was placed globally under the topbar.
+          text = re.sub(
+              r'\n\s*<div class=\\"exam-countdowns\\".*?</div>\n\s*<section class=\\"view \$\{r\.activeView === \\"today\\" \? \\"active\\" : \\"\\"\}\\" id=\\"today-view\\">\$\{_\(\)\}</section>',
+              '\n      <section class=\\"view ${r.activeView === \\"today\\" ? \\"active\\" : \\"\\"}\\" id=\\"today-view\\">${_()}</section>',
+              text,
+              count=1,
+              flags=re.S,
+          )
+
+          marker = '''        return `<div class=\\"dashboard-grid\\">\n    <div class=\\"stack\\">\n      <article class=\\"card focus-card\\">'''
+
+          replacement = '''        return `<div class=\\"dashboard-grid\\">\n    <div class=\\"stack\\">\n      <div class=\\"exam-countdowns\\" style=\\"display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;\\">\n        <article class=\\"card\\" style=\\"padding:14px 16px;\\">\n          <span class=\\"eyebrow\\">UNESP · 1ª fase</span>\n          <div style=\\"display:flex;align-items:baseline;gap:7px;margin-top:5px;\\"><strong style=\\"font-size:28px;line-height:1;\\">${ne()}</strong><span style=\\"color:var(--muted);font-weight:700;\\">dias</span></div>\n          <small style=\\"display:block;margin-top:6px;color:var(--muted);\\">22 de novembro de 2026</small>\n        </article>\n        <article class=\\"card\\" style=\\"padding:14px 16px;\\">\n          <span class=\\"eyebrow\\">UNESP · 2ª fase</span>\n          <div style=\\"display:flex;align-items:baseline;gap:7px;margin-top:5px;\\"><strong style=\\"font-size:28px;line-height:1;\\">${fe()}</strong><span style=\\"color:var(--muted);font-weight:700;\\">dias</span></div>\n          <small style=\\"display:block;margin-top:6px;color:var(--muted);\\">13 de dezembro de 2026</small>\n        </article>\n      </div>\n      <article class=\\"card focus-card\\">'''
+
+          if marker not in text:
+              raise SystemExit('Home focus marker not found; no changes written.')
+
+          text = text.replace(marker, replacement, 1)
+          path.write_text(text, encoding='utf-8')
+          PY
+      - name: Remove one-time workflow
+        run: rm -f .github/workflows/move-countdowns-home.yml
+      - name: Commit changes
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html .github/workflows/move-countdowns-home.yml
+          git commit -m 'Show both UNESP countdowns beside daily focus'
+          git push
