@@ -4269,25 +4269,12 @@
     <aside class="sidebar">
       <div class="brand"><div class="brand-mark">${h.check}</div><div class="brand-copy"><h1>UNESP em foco</h1><p>Planejamento da Duda</p></div></div>
       <nav class="nav">${f("today", "Hoje", "home")}${f("content", "Conteúdos", "list")}${f("reviews", "Revisões", "repeat")}${f("phase2", "2ª fase", "pen")}${f("sims", "Simulados", "chart")}</nav>
-      <div class="side-card"><small>1ª fase em</small><strong>${ne()} dias</strong><small>22 de novembro</small></div>
     </aside>
     <main class="main">
       <header class="topbar">
         <div><span class="eyebrow" id="view-eyebrow">Seu plano completo</span><h2 id="view-title">Bom estudo, Duda ✦</h2><p id="view-subtitle">Um passo bem feito hoje já muda o resultado lá na frente.</p></div>
         <div class="topbar-actions"><div class="date-pill">${w(new Date(), { weekday: "long", day: "numeric", month: "long" })}</div>${syncPanel()}</div>
       </header>
-      <div class="exam-countdowns" style="display:flex;flex-wrap:wrap;gap:12px;margin:0 0 20px;">
-        <article style="flex:1 1 220px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px 18px;box-shadow:var(--shadow);">
-          <span class="eyebrow">UNESP · 1ª fase</span>
-          <div style="display:flex;align-items:baseline;gap:8px;margin-top:6px;"><strong style="font-size:30px;line-height:1;">${ne()}</strong><span style="color:var(--muted);font-weight:700;">dias</span></div>
-          <small style="display:block;margin-top:7px;color:var(--muted);">22 de novembro de 2026</small>
-        </article>
-        <article style="flex:1 1 220px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px 18px;box-shadow:var(--shadow);">
-          <span class="eyebrow">UNESP · 2ª fase</span>
-          <div style="display:flex;align-items:baseline;gap:8px;margin-top:6px;"><strong style="font-size:30px;line-height:1;">${fe()}</strong><span style="color:var(--muted);font-weight:700;">dias</span></div>
-          <small style="display:block;margin-top:7px;color:var(--muted);">13 de dezembro de 2026</small>
-        </article>
-      </div>
       <section class="view ${r.activeView === "today" ? "active" : ""}" id="today-view">${_()}</section>
       <section class="view ${r.activeView === "content" ? "active" : ""}" id="content-view">${T()}</section>
       <section class="view ${r.activeView === "reviews" ? "active" : ""}" id="reviews-view">${be()}${FlashcardsSection()}</section>
@@ -4311,7 +4298,7 @@
         return `<div class="dashboard-grid">
     <div class="stack">
       <article class="card focus-card">
-        <div class="focus-header"><div><span class="eyebrow">${i ? "Foco de hoje" : "Foco do dia selecionado"} · cronograma completo</span><h3>${w(o, { weekday: "long", day: "numeric", month: "long" })}</h3><p>${n.total ? "Marque as aulas feitas aqui e as revisões serão agendadas automaticamente." : i ? "Hoje é dia de respirar e organizar a próxima semana." : "Não há aulas programadas para esta data."}</p></div><div class="focus-status"><div class="focus-count">${n.done} de ${n.total} concluídos</div>${i ? "" : '<button class="focus-today-btn" data-back-today>Voltar para hoje</button>'}</div></div>
+        <div class="focus-header"><div><span class="eyebrow">${i ? "Foco de hoje" : "Foco do dia selecionado"} · cronograma completo</span><h3>${w(o, { weekday: "long", day: "numeric", month: "long" })}</h3><p>${n.total ? "Marque as aulas feitas aqui e as revisões serão agendadas automaticamente." : i ? "Hoje é dia de respirar e organizar a próxima semana." : "Não há aulas programadas para esta data."}</p></div><div class="focus-status"><div class="focus-count">${n.done} de ${n.total} concluídos</div><div style="margin-top:8px;padding:9px 12px;border:1px solid var(--line);border-radius:12px;background:var(--card);text-align:center"><small style="display:block;color:var(--muted);font-weight:700">1ª fase em</small><strong style="display:block;font-size:24px;line-height:1.15;margin:3px 0">${ne()} dias</strong><small style="color:var(--muted)">22 de novembro</small></div>${i ? "" : '<button class="focus-today-btn" data-back-today>Voltar para hoje</button>'}</div></div>
         <div class="sessions">${ue(s)}</div>
       </article>
       <article class="card">
