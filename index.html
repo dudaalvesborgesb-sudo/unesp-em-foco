@@ -4276,6 +4276,18 @@
         <div><span class="eyebrow" id="view-eyebrow">Seu plano completo</span><h2 id="view-title">Bom estudo, Duda ✦</h2><p id="view-subtitle">Um passo bem feito hoje já muda o resultado lá na frente.</p></div>
         <div class="topbar-actions"><div class="date-pill">${w(new Date(), { weekday: "long", day: "numeric", month: "long" })}</div>${syncPanel()}</div>
       </header>
+      <div class="exam-countdowns" style="display:flex;flex-wrap:wrap;gap:12px;margin:0 0 20px;">
+        <article style="flex:1 1 220px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px 18px;box-shadow:var(--shadow);">
+          <span class="eyebrow">UNESP · 1ª fase</span>
+          <div style="display:flex;align-items:baseline;gap:8px;margin-top:6px;"><strong style="font-size:30px;line-height:1;">${ne()}</strong><span style="color:var(--muted);font-weight:700;">dias</span></div>
+          <small style="display:block;margin-top:7px;color:var(--muted);">22 de novembro de 2026</small>
+        </article>
+        <article style="flex:1 1 220px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px 18px;box-shadow:var(--shadow);">
+          <span class="eyebrow">UNESP · 2ª fase</span>
+          <div style="display:flex;align-items:baseline;gap:8px;margin-top:6px;"><strong style="font-size:30px;line-height:1;">${fe()}</strong><span style="color:var(--muted);font-weight:700;">dias</span></div>
+          <small style="display:block;margin-top:7px;color:var(--muted);">13 de dezembro de 2026</small>
+        </article>
+      </div>
       <section class="view ${r.activeView === "today" ? "active" : ""}" id="today-view">${_()}</section>
       <section class="view ${r.activeView === "content" ? "active" : ""}" id="content-view">${T()}</section>
       <section class="view ${r.activeView === "reviews" ? "active" : ""}" id="reviews-view">${be()}${FlashcardsSection()}</section>
