@@ -279,6 +279,19 @@
             ],
           },
         ],
+        recoveryPlan = {
+          "2026-09-09": "As bases de Ecologia e Química que ficaram pendentes entram junto do conteúdo de hoje.",
+          "2026-09-10": "A linha do tempo literária atrasada foi incorporada ao bloco de Literatura.",
+          "2026-09-11": "Cinemática entra antes de MU e MUV; a redação já inclui estrutura e tese.",
+          "2026-09-12": "Depois do simulado, faça somente uma correção curta e registre os erros.",
+          "2026-09-13": "Revisão leve de Geopolítica e dos conteúdos retomados na semana.",
+          "2026-09-14": "O bloco de Matemática começa pela função afim antes da quadrática.",
+          "2026-09-15": "Morfologia e sintaxe entram como retomada antes de semântica.",
+          "2026-09-16": "Cronograma normal: não acrescente pendências neste dia.",
+          "2026-09-17": "Cronograma normal: Guerra Fria, Romantismo e questões.",
+          "2026-09-18": "Cronograma normal: Dinâmica, redação e correção.",
+          "2026-09-19": "Fechamento das pendências: Era Vargas, Ditadura e matemática financeira."
+        },
         ae = {
           "2026-08-25": [
             {
@@ -576,7 +589,7 @@
               time: "15:30",
               duration: "1h",
               subject: "Biologia",
-              title: "Ecologia — ciclos + relações ecológicas",
+              title: "Ecologia — conceitos, cadeias, ciclos e relações ecológicas",
               priority: "high",
             },
             {
@@ -584,7 +597,7 @@
               time: "16:45",
               duration: "1h",
               subject: "Química",
-              title: "Ligações químicas",
+              title: "Estrutura atômica, tabela periódica e ligações químicas",
               priority: "high",
             },
             {
@@ -610,7 +623,7 @@
               time: "16:45",
               duration: "1h",
               subject: "Literatura",
-              title: "Barroco + Arcadismo",
+              title: "Linha do tempo: Trovadorismo ao Arcadismo",
               priority: "medium",
             },
             {
@@ -628,7 +641,7 @@
               time: "15:30",
               duration: "1h",
               subject: "Física",
-              title: "MU + MUV",
+              title: "Cinemática + MU e MUV",
               priority: "high",
             },
             {
@@ -636,18 +649,36 @@
               time: "16:45",
               duration: "1h",
               subject: "Redação",
-              title: "Redação",
+              title: "Redação completa — estrutura e tese",
               priority: "high",
             },
           ],
           "2026-09-12": [
             {
               id: "2026-09-12-leve",
-              time: "10:30",
+              time: "15:30",
               duration: "45 min",
-              subject: "Sábado leve",
-              title: "Questões de Física • ritmo tranquilo",
-              priority: "low",
+              subject: "Simulado",
+              title: "Correção curta + caderno de erros",
+              priority: "medium",
+            },
+          ],
+          "2026-09-13": [
+            {
+              id: "recovery-2026-09-13-geopolitics",
+              time: "16:00",
+              duration: "40 min",
+              subject: "Geografia",
+              title: "Geopolítica, ordem mundial, globalização e comércio",
+              priority: "high",
+            },
+            {
+              id: "recovery-2026-09-13-review",
+              time: "16:45",
+              duration: "20 min",
+              subject: "Revisão leve",
+              title: "Flashcards + 10 questões da retomada",
+              priority: "medium",
             },
           ],
           "2026-09-14": [
@@ -664,7 +695,7 @@
               time: "16:45",
               duration: "1h",
               subject: "Matemática",
-              title: "Função quadrática",
+              title: "Funções: conceito, afim e quadrática",
               priority: "high",
             },
             {
@@ -690,7 +721,7 @@
               time: "16:45",
               duration: "1h",
               subject: "Português",
-              title: "Semântica + figuras de linguagem",
+              title: "Morfologia, sintaxe, semântica e figuras de linguagem",
               priority: "high",
             },
             {
@@ -774,12 +805,28 @@
           ],
           "2026-09-19": [
             {
-              id: "2026-09-19-leve",
-              time: "10:30",
+              id: "recovery-2026-09-19-history",
+              time: "15:30",
+              duration: "1h15",
+              subject: "História",
+              title: "Era Vargas + Ditadura Militar e redemocratização",
+              priority: "high",
+            },
+            {
+              id: "recovery-2026-09-19-math",
+              time: "16:55",
               duration: "45 min",
-              subject: "Sábado leve",
-              title: "Questões • ritmo tranquilo",
-              priority: "low",
+              subject: "Matemática",
+              title: "Regra de três + matemática financeira",
+              priority: "high",
+            },
+            {
+              id: "recovery-2026-09-19-questions",
+              time: "17:50",
+              duration: "30 min",
+              subject: "Prática",
+              title: "10 questões das pendências",
+              priority: "high",
             },
           ],
           "2026-09-21": [
@@ -4123,8 +4170,22 @@
       function J(e, a) {
         ((r.completedTopics[e] = a), a || delete r.reviewPlans[e], l());
       }
+      function fitBeforeClass(session, dateKey) {
+        const day = M(dateKey).getDay();
+        if (dateKey < "2026-09-09" || day === 0 || day === 6) return session;
+        const slot = session.id.endsWith("-a")
+          ? ["15:20", "1h05"]
+          : session.id.endsWith("-b")
+            ? ["16:35", "1h05"]
+            : session.id.endsWith("-c")
+              ? ["17:50", "30 min"]
+              : null;
+        return slot
+          ? { ...session, time: slot[0], duration: slot[1] }
+          : session;
+      }
       function k(e) {
-        const a = ae[e] || [],
+        const a = (ae[e] || []).map((o) => fitBeforeClass(o, e)),
           i = r.customSessions.filter((o) => o.date === e);
         return [...a, ...i];
       }
@@ -4294,11 +4355,13 @@
           o = M(e),
           s = k(e),
           n = re(e),
-          d = K();
+          d = K(),
+          recoveryNote = recoveryPlan[e];
         return `<div class="dashboard-grid">
     <div class="stack">
       <article class="card focus-card">
         <div class="focus-header"><div><span class="eyebrow">${i ? "Foco de hoje" : "Foco do dia selecionado"} · cronograma completo</span><h3>${w(o, { weekday: "long", day: "numeric", month: "long" })}</h3><p>${n.total ? "Marque as aulas feitas aqui e as revisões serão agendadas automaticamente." : i ? "Hoje é dia de respirar e organizar a próxima semana." : "Não há aulas programadas para esta data."}</p></div><div class="focus-status"><div class="focus-count">${n.done} de ${n.total} concluídos</div><div style="margin-top:8px;padding:9px 12px;border:1px solid var(--line);border-radius:12px;background:var(--card);text-align:center"><small style="display:block;color:var(--muted);font-weight:700">1ª fase em</small><strong style="display:block;font-size:24px;line-height:1.15;margin:3px 0">${ne()} dias</strong><small style="color:var(--muted)">22 de novembro</small></div>${i ? "" : '<button class="focus-today-btn" data-back-today>Voltar para hoje</button>'}</div></div>
+        ${recoveryNote ? `<div class="recovery-note"><div class="recovery-mark">↻</div><div><span>Retomada pós-Hallel · 09 a 19/09</span><strong>${C(recoveryNote)}</strong></div></div>` : ""}
         <div class="sessions">${ue(s)}</div>
       </article>
       <article class="card">
@@ -5436,6 +5499,43 @@
       }
       .focus-today-btn:hover {
         background: #fff3;
+      }
+      .recovery-note {
+        margin: 16px 18px 0;
+        padding: 13px 15px;
+        display: grid;
+        grid-template-columns: 34px 1fr;
+        gap: 12px;
+        align-items: center;
+        border: 1px solid #e7d6ae;
+        border-radius: 14px;
+        background: #fff9ec;
+      }
+      .recovery-mark {
+        width: 34px;
+        height: 34px;
+        display: grid;
+        place-items: center;
+        border-radius: 11px;
+        color: #8a5a1f;
+        background: #f7e5bd;
+        font-size: 19px;
+        font-weight: 800;
+      }
+      .recovery-note span {
+        display: block;
+        margin-bottom: 3px;
+        color: #9a692b;
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+      }
+      .recovery-note strong {
+        display: block;
+        color: #4b4032;
+        font-size: 13px;
+        line-height: 1.4;
       }
       .sessions {
         padding: 9px 18px 13px;
