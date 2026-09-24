@@ -3831,6 +3831,7 @@
           reviewPlans: {},
           phase2Checks: {},
           phase2Sessions: [],
+          essayProgress: {},
           activeView: "today",
           simTab: "exam",
           examAttempt: null,
@@ -3856,7 +3857,10 @@
         cloudStatus = "local";
       let r = te(),
         z = null,
-        x = new Date();
+        x = new Date(),
+        essayExamFilter = "all",
+        essayAxisFilter = "all",
+        essayOpenId = null;
       restoreConfirmedStudyHistory();
       x.setDate(1);
       let q = g(new Date());
@@ -4014,6 +4018,7 @@
           (e.reviewPlans ||= {}),
           (e.phase2Checks ||= {}),
           (e.phase2Sessions ||= []),
+          (e.essayProgress ||= {}),
           Object.entries(e.completedSessions || {}).forEach(([a, i]) => {
             const o = i ? findStudySession(a, e) : null;
             o &&
@@ -4506,6 +4511,129 @@
         };
         (a(), (z = setInterval(a, 1e3)));
       }
+
+      const essayAxes = [
+        ["all","Todos os eixos"],
+        ["tecnologia","Tecnologia"],
+        ["educacao","Educação"],
+        ["trabalho","Trabalho"],
+        ["sociedade","Sociedade"],
+        ["cultura","Cultura e identidade"],
+        ["cidade","Cidade e cidadania"],
+        ["saude","Saúde"],
+        ["meioambiente","Meio ambiente"],
+        ["relacoes","Relações humanas"],
+      ];
+      const essayTopics = [
+        {id:"u2026",exam:"unesp",real:true,year:2026,axis:"relacoes",title:"Vivemos hoje uma epidemia da solidão?",difficulty:"médio",think:["solidão x solitude","redes sociais e vínculos","individualismo contemporâneo"],repertoires:["Zygmunt Bauman","Byung-Chul Han","filme Her"]},
+        {id:"u2025",exam:"unesp",real:true,year:2025,axis:"saude",title:"Medicalização da vida: a quem interessa?",difficulty:"difícil",think:["transformação de sofrimentos em diagnósticos","indústria e consumo","limites entre cuidado e excesso"],repertoires:["Michel Foucault","sociedade do desempenho","indústria farmacêutica"]},
+        {id:"u2024",exam:"unesp",real:true,year:2024,axis:"tecnologia",title:"É possível um futuro off-line?",difficulty:"médio",think:["dependência digital","trabalho e serviços conectados","direito à desconexão"],repertoires:["Black Mirror","Byung-Chul Han","economia da atenção"]},
+        {id:"u2023",exam:"unesp",real:true,year:2023,axis:"cidade",title:"A “lógica do condomínio”: o espaço público está em declínio?",difficulty:"difícil",think:["segregação urbana","medo e privatização do convívio","uso dos espaços públicos"],repertoires:["Teresa Caldeira","direito à cidade","urbanização brasileira"]},
+        {id:"u2021",exam:"unesp",real:true,year:2021,axis:"trabalho",title:"Tempo é dinheiro?",difficulty:"médio",think:["produtividade","tempo livre","valor econômico do tempo"],repertoires:["Karl Marx","sociedade do desempenho","Revolução Industrial"]},
+
+        {id:"ui01",exam:"unesp",real:false,axis:"tecnologia",title:"A conexão permanente está nos deixando menos disponíveis?",difficulty:"médio",think:["presença física x disponibilidade digital","notificações e atenção","relações pessoais"],repertoires:["Byung-Chul Han","Bauman","Her"]},
+        {id:"ui02",exam:"unesp",real:false,axis:"tecnologia",title:"A inteligência artificial amplia ou empobrece a criatividade humana?",difficulty:"difícil",think:["autoria","ferramenta x substituição","criatividade e repertório"],repertoires:["Walter Benjamin","Alan Turing","debate sobre autoria"]},
+        {id:"ui03",exam:"unesp",real:false,axis:"trabalho",title:"Trabalhamos para viver ou vivemos para trabalhar?",difficulty:"médio",think:["centralidade do trabalho","lazer","identidade profissional"],repertoires:["Karl Marx","Max Weber","Tempos Modernos"]},
+        {id:"ui04",exam:"unesp",real:false,axis:"sociedade",title:"O sucesso individual depende apenas do esforço?",difficulty:"médio",think:["mérito","desigualdade de oportunidades","responsabilidade individual"],repertoires:["Pierre Bourdieu","mobilidade social","desigualdade brasileira"]},
+        {id:"ui05",exam:"unesp",real:false,axis:"relacoes",title:"Estar sozinho significa estar solitário?",difficulty:"fácil",think:["solitude","isolamento","autonomia emocional"],repertoires:["Bauman","Clarice Lispector","vida urbana"]},
+        {id:"ui06",exam:"unesp",real:false,axis:"relacoes",title:"É possível construir relações profundas em uma sociedade de vínculos rápidos?",difficulty:"médio",think:["imediatismo","afetos","descartabilidade"],repertoires:["Bauman","sociedade líquida","redes sociais"]},
+        {id:"ui07",exam:"unesp",real:false,axis:"sociedade",title:"Comprar tornou-se uma forma de pertencer?",difficulty:"médio",think:["consumo e identidade","status","publicidade"],repertoires:["Zygmunt Bauman","Thorstein Veblen","indústria cultural"]},
+        {id:"ui08",exam:"unesp",real:false,axis:"sociedade",title:"Ter escolhas demais nos torna mais livres?",difficulty:"difícil",think:["liberdade","paradoxo da escolha","consumo"],repertoires:["existencialismo","Barry Schwartz","sociedade de consumo"]},
+        {id:"ui09",exam:"unesp",real:false,axis:"cultura",title:"Precisamos transformar toda experiência em registro?",difficulty:"médio",think:["memória","fotografia","exposição nas redes"],repertoires:["Walter Benjamin","Susan Sontag","cultura digital"]},
+        {id:"ui10",exam:"unesp",real:false,axis:"cultura",title:"Quem decide o que merece ser lembrado?",difficulty:"difícil",think:["memória coletiva","apagamentos históricos","patrimônio"],repertoires:["Maurice Halbwachs","memória social","patrimônio cultural"]},
+        {id:"ui11",exam:"unesp",real:false,axis:"educacao",title:"Aprender é necessariamente tirar boas notas?",difficulty:"fácil",think:["avaliação","aprendizagem real","pressão por desempenho"],repertoires:["Paulo Freire","educação bancária","avaliação escolar"]},
+        {id:"ui12",exam:"unesp",real:false,axis:"educacao",title:"A escola prepara para a vida ou apenas para as provas?",difficulty:"médio",think:["currículo","formação cidadã","vestibular"],repertoires:["Paulo Freire","John Dewey","educação integral"]},
+        {id:"ui13",exam:"unesp",real:false,axis:"cidade",title:"A cidade ainda é um espaço de convivência?",difficulty:"médio",think:["segregação","mobilidade","espaços públicos"],repertoires:["Henri Lefebvre","Jane Jacobs","direito à cidade"]},
+        {id:"ui14",exam:"unesp",real:false,axis:"cidade",title:"Muros produzem segurança ou isolamento?",difficulty:"médio",think:["medo urbano","condomínios","fragmentação social"],repertoires:["Teresa Caldeira","urbanização","segregação socioespacial"]},
+        {id:"ui15",exam:"unesp",real:false,axis:"meioambiente",title:"O conforto contemporâneo é compatível com a sustentabilidade?",difficulty:"médio",think:["consumo","energia","responsabilidade coletiva"],repertoires:["desenvolvimento sustentável","sociedade de consumo","crise climática"]},
+
+        {id:"e2023",exam:"enem",real:true,year:2023,axis:"trabalho",title:"Desafios para o enfrentamento da invisibilidade do trabalho de cuidado realizado pela mulher no Brasil",difficulty:"médio",think:["divisão sexual do trabalho","trabalho não remunerado","desigualdade de gênero"],repertoires:["IBGE","divisão sexual do trabalho","Constituição Federal"]},
+        {id:"e2022",exam:"enem",real:true,year:2022,axis:"cultura",title:"Desafios para a valorização de comunidades e povos tradicionais no Brasil",difficulty:"médio",think:["direitos territoriais","preservação cultural","invisibilidade social"],repertoires:["Constituição de 1988","diversidade cultural","povos tradicionais"]},
+        {id:"e2021",exam:"enem",real:true,year:2021,axis:"sociedade",title:"Invisibilidade e registro civil: garantia de acesso à cidadania no Brasil",difficulty:"difícil",think:["documentação","acesso a direitos","populações vulneráveis"],repertoires:["cidadania","Constituição Federal","direitos civis"]},
+        {id:"e2020",exam:"enem",real:true,year:2020,axis:"saude",title:"O estigma associado às doenças mentais na sociedade brasileira",difficulty:"médio",think:["preconceito","informação","acesso a cuidado"],repertoires:["OMS","saúde pública","estigma social"]},
+        {id:"e2019",exam:"enem",real:true,year:2019,axis:"cultura",title:"Democratização do acesso ao cinema no Brasil",difficulty:"médio",think:["acesso à cultura","desigualdade regional","políticas culturais"],repertoires:["direito à cultura","indústria cultural","desigualdade regional"]},
+        {id:"e2018",exam:"enem",real:true,year:2018,axis:"tecnologia",title:"Manipulação do comportamento do usuário pelo controle de dados na internet",difficulty:"difícil",think:["algoritmos","dados pessoais","autonomia"],repertoires:["LGPD","economia da atenção","documentário O Dilema das Redes"]},
+        {id:"e2017",exam:"enem",real:true,year:2017,axis:"educacao",title:"Desafios para a formação educacional de surdos no Brasil",difficulty:"difícil",think:["acessibilidade","Libras","inclusão escolar"],repertoires:["Lei de Libras","educação inclusiva","direito à educação"]},
+        {id:"e2016",exam:"enem",real:true,year:2016,axis:"sociedade",title:"Caminhos para combater a intolerância religiosa no Brasil",difficulty:"médio",think:["liberdade religiosa","preconceito","educação"],repertoires:["Constituição Federal","laicidade do Estado","direitos humanos"]},
+
+        {id:"ei01",exam:"enem",real:false,axis:"educacao",title:"Desafios para combater a evasão escolar entre jovens no Brasil",difficulty:"médio",think:["renda","trabalho precoce","pertencimento escolar"],repertoires:["ECA","direito à educação","desigualdade social"]},
+        {id:"ei02",exam:"enem",real:false,axis:"cultura",title:"Caminhos para ampliar o acesso à cultura nas periferias brasileiras",difficulty:"médio",think:["equipamentos culturais","mobilidade","financiamento"],repertoires:["Constituição Federal","direito à cultura","desigualdade urbana"]},
+        {id:"ei03",exam:"enem",real:false,axis:"tecnologia",title:"Desafios para reduzir a exclusão digital de idosos no Brasil",difficulty:"médio",think:["serviços digitalizados","alfabetização digital","acessibilidade"],repertoires:["Estatuto da Pessoa Idosa","inclusão digital","cidadania"]},
+        {id:"ei04",exam:"enem",real:false,axis:"trabalho",title:"Impactos da informalidade no futuro profissional dos jovens brasileiros",difficulty:"difícil",think:["proteção social","precarização","entrada no mercado"],repertoires:["CLT","OIT","desemprego juvenil"]},
+        {id:"ei05",exam:"enem",real:false,axis:"saude",title:"Caminhos para combater a desinformação em saúde no Brasil",difficulty:"médio",think:["redes sociais","alfabetização científica","confiança em instituições"],repertoires:["SUS","OMS","educação midiática"]},
+        {id:"ei06",exam:"enem",real:false,axis:"meioambiente",title:"Desafios para ampliar o consumo consciente no Brasil",difficulty:"médio",think:["publicidade","descarte","responsabilidade empresarial"],repertoires:["Agenda 2030","economia circular","Código de Defesa do Consumidor"]},
+        {id:"ei07",exam:"enem",real:false,axis:"cidade",title:"Obstáculos para garantir o direito à cidade à população brasileira",difficulty:"difícil",think:["moradia","mobilidade","segregação"],repertoires:["Estatuto da Cidade","Henri Lefebvre","urbanização brasileira"]},
+        {id:"ei08",exam:"enem",real:false,axis:"relacoes",title:"Desafios para enfrentar o isolamento social entre jovens brasileiros",difficulty:"médio",think:["redes sociais","saúde emocional","espaços de convivência"],repertoires:["Bauman","OMS","juventude e sociabilidade"]},
+        {id:"ei09",exam:"enem",real:false,axis:"tecnologia",title:"Desafios para proteger crianças e adolescentes da exploração comercial nas redes sociais",difficulty:"difícil",think:["publicidade","influenciadores","proteção de dados"],repertoires:["ECA","LGPD","educação midiática"]},
+        {id:"ei10",exam:"enem",real:false,axis:"trabalho",title:"Caminhos para valorizar o trabalho doméstico remunerado no Brasil",difficulty:"médio",think:["direitos trabalhistas","herança histórica","desigualdade de gênero e raça"],repertoires:["PEC das Domésticas","CLT","formação social brasileira"]},
+        {id:"ei11",exam:"enem",real:false,axis:"educacao",title:"Desafios para promover a educação financeira entre jovens brasileiros",difficulty:"fácil",think:["consumo","endividamento","escola"],repertoires:["BNCC","cidadania financeira","sociedade de consumo"]},
+        {id:"ei12",exam:"enem",real:false,axis:"cultura",title:"Desafios para preservar a memória cultural de comunidades locais no Brasil",difficulty:"médio",think:["patrimônio imaterial","transmissão entre gerações","políticas públicas"],repertoires:["IPHAN","Constituição Federal","memória coletiva"]},
+      ];
+      function essayProgressFor(id) {
+        return r.essayProgress?.[id] || {};
+      }
+      function essayFilteredTopics() {
+        return essayTopics.filter((item) =>
+          (essayExamFilter === "all" || item.exam === essayExamFilter) &&
+          (essayAxisFilter === "all" || item.axis === essayAxisFilter)
+        );
+      }
+      function essayTopicCard(item) {
+        const progress=essayProgressFor(item.id),
+          open=essayOpenId===item.id,
+          steps=[
+            ["project","Projeto"],
+            ["written","Escrita"],
+            ["corrected","Corrigida"],
+            ["rewritten","Reescrita"],
+          ],
+          done=steps.filter(([key])=>progress[key]).length;
+        return `<article class="essay-topic-card ${open ? "open" : ""}">
+          <button class="essay-topic-head" data-essay-open="${item.id}">
+            <div>
+              <div class="essay-tags">
+                <span class="essay-badge ${item.exam}">${item.exam.toUpperCase()}</span>
+                <span class="essay-badge ${item.real ? "real" : "new"}">${item.real ? `Já caiu${item.year ? " · "+item.year : ""}` : "Inédito"}</span>
+                <span class="essay-badge neutral">${item.difficulty}</span>
+              </div>
+              <h4>${p(item.title)}</h4>
+              <p>${essayAxes.find(([id])=>id===item.axis)?.[1] || item.axis} · ${done}/4 etapas</p>
+            </div>
+            <span class="essay-chevron">${open ? "−" : "+"}</span>
+          </button>
+          ${open ? `<div class="essay-topic-body">
+            <div class="essay-detail-grid">
+              <div><strong>Para pensar</strong><ul>${item.think.map(x=>`<li>${p(x)}</li>`).join("")}</ul></div>
+              <div><strong>Repertórios possíveis</strong><ul>${item.repertoires.map(x=>`<li>${p(x)}</li>`).join("")}</ul></div>
+            </div>
+            <div class="essay-guidance">
+              <strong>${item.exam === "unesp" ? "Foco UNESP" : "Foco ENEM"}</strong>
+              <p>${item.exam === "unesp" ? "Defina uma tese clara, sustente dois caminhos argumentativos e pense em um título que dialogue com sua posição." : "Delimite o problema brasileiro, desenvolva causas/consequências e feche com proposta de intervenção completa e viável."}</p>
+            </div>
+            <div class="essay-steps">${steps.map(([key,label])=>`<label class="${progress[key] ? "done" : ""}"><input type="checkbox" data-essay-step="${item.id}" data-essay-key="${key}" ${progress[key] ? "checked" : ""}><span>${h.check}</span>${label}</label>`).join("")}</div>
+          </div>` : ""}
+        </article>`;
+      }
+      function EssaySection() {
+        const items=essayFilteredTopics(),
+          completed=essayTopics.filter(item=>essayProgressFor(item.id).written).length;
+        return `<div class="essay-page">
+          <article class="essay-hero">
+            <div><span class="eyebrow">Treino de redação</span><h3>Banco de temas UNESP + ENEM</h3><p>Temas reais são identificados pelo ano. Os inéditos foram criados para treinar o estilo de cada prova sem revelar uma tese pronta antes de você pensar.</p></div>
+            <div class="essay-hero-actions"><button class="primary-btn" data-essay-random>🎲 Sortear tema</button><div><strong>${completed}</strong><span>redações escritas</span></div></div>
+          </article>
+          <article class="card">
+            <div class="essay-filter-group"><strong>Prova</strong><div class="filter-row">
+              ${[["all","Todas"],["unesp","UNESP"],["enem","ENEM"]].map(([id,label])=>`<button class="chip ${essayExamFilter===id ? "active" : ""}" data-essay-exam="${id}">${label}</button>`).join("")}
+            </div></div>
+            <div class="essay-filter-group"><strong>Eixo</strong><div class="filter-row">
+              ${essayAxes.map(([id,label])=>`<button class="chip ${essayAxisFilter===id ? "active" : ""}" data-essay-axis="${id}">${label}</button>`).join("")}
+            </div></div>
+          </article>
+          <div class="essay-grid">${items.map(essayTopicCard).join("")}</div>
+          ${!items.length ? '<div class="empty-state"><strong>Nenhum tema nesse filtro</strong><div>Escolha outro eixo ou prova.</div></div>' : ""}
+        </div>`;
+      }
       function f(e, a, i) {
         return `<button class="nav-btn ${r.activeView === e ? "active" : ""}" data-view="${e}">${h[i]}<span>${a}</span></button>`;
       }
@@ -4522,7 +4650,7 @@
   <div class="app-shell">
     <aside class="sidebar">
       <div class="brand"><div class="brand-mark">${h.check}</div><div class="brand-copy"><h1>UNESP em foco</h1><p>Planejamento da Duda</p></div></div>
-      <nav class="nav">${f("today", "Hoje", "home")}${f("content", "Conteúdos", "list")}${f("reviews", "Revisões", "repeat")}${f("phase2", "2ª fase", "pen")}${f("sims", "Simulados", "chart")}</nav>
+      <nav class="nav">${f("today", "Hoje", "home")}${f("content", "Conteúdos", "list")}${f("reviews", "Revisões", "repeat")}${f("essay", "Redação", "pen")}${f("phase2", "2ª fase", "pen")}${f("sims", "Simulados", "chart")}</nav>
     </aside>
     <main class="main">
       <header class="topbar">
@@ -4532,11 +4660,12 @@
       <section class="view ${r.activeView === "today" ? "active" : ""}" id="today-view">${_()}</section>
       <section class="view ${r.activeView === "content" ? "active" : ""}" id="content-view">${T()}</section>
       <section class="view ${r.activeView === "reviews" ? "active" : ""}" id="reviews-view">${be()}${FlashcardsSection()}</section>
+      <section class="view ${r.activeView === "essay" ? "active" : ""}" id="essay-view">${EssaySection()}</section>
       <section class="view ${r.activeView === "phase2" ? "active" : ""}" id="phase2-view">${ye()}</section>
       <section class="view ${r.activeView === "sims" ? "active" : ""}" id="sims-view">${$e()}</section>
     </main>
   </div>
-  <nav class="mobile-nav">${f("today", "Hoje", "home")}${f("content", "Conteúdos", "list")}${f("reviews", "Revisões", "repeat")}${f("phase2", "2ª fase", "pen")}${f("sims", "Simulados", "chart")}</nav>
+  <nav class="mobile-nav">${f("today", "Hoje", "home")}${f("content", "Conteúdos", "list")}${f("reviews", "Revisões", "repeat")}${f("essay", "Redação", "pen")}${f("phase2", "2ª fase", "pen")}${f("sims", "Simulados", "chart")}</nav>
   <div class="modal-backdrop" id="session-modal"><div class="modal"><div class="modal-head"><h3>Adicionar bloco de estudo</h3><button class="close-btn" data-close-modal>×</button></div>${Pe()}</div></div>
   <div class="modal-backdrop" id="finish-modal"><div class="modal"><div class="modal-head"><h3>Finalizar o simulado?</h3><button class="close-btn" data-close-finish>×</button></div><p class="modal-copy">Você respondeu <strong>${E()}</strong> de 90 questões. Depois de finalizar, o gabarito e a análise completa serão liberados.</p><div class="modal-actions"><button class="secondary-btn" data-close-finish>Continuar respondendo</button><button class="primary-btn" data-confirm-finish>Finalizar e corrigir</button></div></div></div>
   <div class="toast" id="toast"></div>`;
@@ -4979,6 +5108,11 @@
             "Revisões espaçadas",
             "Rever na hora certa vale mais do que recomeçar depois.",
           ],
+          essay: [
+            "Argumentação em treino",
+            "Redação UNESP + ENEM",
+            "Escolha um eixo, construa sua tese e acompanhe cada versão do texto.",
+          ],
           phase2: [
             "Resposta por resposta",
             "Preparação para a 2ª fase",
@@ -5006,6 +5140,47 @@
               ((r.activeView = e.dataset.view), l(), u());
             }),
           ),
+          document.querySelectorAll("[data-essay-exam]").forEach((e) =>
+            e.addEventListener("click", () => {
+              essayExamFilter = e.dataset.essayExam;
+              essayOpenId = null;
+              u();
+            }),
+          ),
+          document.querySelectorAll("[data-essay-axis]").forEach((e) =>
+            e.addEventListener("click", () => {
+              essayAxisFilter = e.dataset.essayAxis;
+              essayOpenId = null;
+              u();
+            }),
+          ),
+          document.querySelectorAll("[data-essay-open]").forEach((e) =>
+            e.addEventListener("click", () => {
+              essayOpenId = essayOpenId === e.dataset.essayOpen ? null : e.dataset.essayOpen;
+              u();
+            }),
+          ),
+          document.querySelectorAll("[data-essay-step]").forEach((e) =>
+            e.addEventListener("change", () => {
+              const id=e.dataset.essayStep, key=e.dataset.essayKey;
+              r.essayProgress ||= {};
+              r.essayProgress[id] ||= {};
+              r.essayProgress[id][key]=e.checked;
+              l();
+              u();
+              b(e.checked ? "Etapa da redação concluída!" : "Etapa reaberta.");
+            }),
+          ),
+          document.querySelector("[data-essay-random]")?.addEventListener("click", () => {
+            const pool=essayFilteredTopics();
+            if (!pool.length) return;
+            const unseen=pool.filter(item=>!essayProgressFor(item.id).written);
+            const source=unseen.length ? unseen : pool;
+            const picked=source[Math.floor(Math.random()*source.length)];
+            essayOpenId=picked.id;
+            u();
+            setTimeout(()=>document.querySelector('[data-essay-open="'+picked.id+'"]')?.scrollIntoView({behavior:"smooth",block:"center"}),0);
+          }),
           document.querySelectorAll("[data-session]").forEach((e) =>
             e.addEventListener("click", () => {
               const a = e.dataset.session;
@@ -7355,6 +7530,39 @@
         transform: none;
         opacity: 1;
       }
+      .essay-page{display:grid;gap:18px}
+      .essay-hero{display:grid;grid-template-columns:1fr auto;gap:24px;align-items:center;padding:28px;border-radius:22px;background:linear-gradient(135deg,#342d3c,#6e5a7c);color:#fff;box-shadow:var(--shadow)}
+      .essay-hero h3{margin:5px 0 8px;font:800 30px Manrope,sans-serif;letter-spacing:-.03em}
+      .essay-hero p{max-width:760px;margin:0;color:#e4dce8;line-height:1.55;font-size:12px}
+      .essay-hero .eyebrow{color:#d8c8e1}
+      .essay-hero-actions{display:grid;gap:12px;justify-items:end}
+      .essay-hero-actions>div{text-align:right}
+      .essay-hero-actions strong,.essay-hero-actions span{display:block}
+      .essay-hero-actions strong{font:800 30px Manrope,sans-serif}
+      .essay-hero-actions span{font-size:10px;color:#d8cddd}
+      .essay-filter-group{display:grid;grid-template-columns:64px 1fr;gap:12px;align-items:start}
+      .essay-filter-group+.essay-filter-group{margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+      .essay-filter-group>strong{padding-top:7px;font-size:11px}
+      .essay-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+      .essay-topic-card{border:1px solid var(--line);background:#fff;border-radius:17px;box-shadow:var(--shadow);overflow:hidden}
+      .essay-topic-head{width:100%;display:grid;grid-template-columns:1fr auto;gap:14px;text-align:left;padding:17px;border:0;background:#fff;color:var(--ink);cursor:pointer}
+      .essay-topic-head h4{margin:10px 0 6px;font:800 15px/1.35 Manrope,sans-serif}
+      .essay-topic-head p{margin:0;color:var(--muted);font-size:10px}
+      .essay-tags{display:flex;flex-wrap:wrap;gap:5px}
+      .essay-badge{padding:4px 7px;border-radius:99px;font-size:8px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
+      .essay-badge.unesp{background:#eee7f5;color:#654f78}.essay-badge.enem{background:#e7f1eb;color:#4f7359}
+      .essay-badge.real{background:#fff0dc;color:#95601e}.essay-badge.new{background:#edf0f7;color:#5d6881}.essay-badge.neutral{background:#f3f1f4;color:#716a75}
+      .essay-chevron{width:28px;height:28px;display:grid;place-items:center;border-radius:50%;background:#f5f2f6;font-weight:800}
+      .essay-topic-body{padding:0 17px 17px;border-top:1px solid var(--line)}
+      .essay-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;padding:16px 0}
+      .essay-detail-grid strong,.essay-guidance strong{font-size:11px}
+      .essay-detail-grid ul{margin:8px 0 0;padding-left:17px;color:var(--muted);font-size:11px;line-height:1.55}
+      .essay-guidance{padding:12px 13px;background:#faf8fc;border-radius:12px}
+      .essay-guidance p{margin:5px 0 0;color:var(--muted);font-size:11px;line-height:1.5}
+      .essay-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:13px}
+      .essay-steps label{display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 7px;border:1px solid var(--line);border-radius:10px;font-size:9px;font-weight:800;cursor:pointer}
+      .essay-steps input{position:absolute;opacity:0;pointer-events:none}.essay-steps label span{width:16px;height:16px;display:grid;place-items:center;border:1px solid #d7cedb;border-radius:5px;color:transparent}
+      .essay-steps label.done{background:var(--sage-soft);border-color:#bfd0c4;color:#4c7057}.essay-steps label.done span{background:var(--sage);border-color:var(--sage);color:#fff}.essay-steps svg{width:10px}
       .mobile-nav {
         display: none;
       }
@@ -7409,7 +7617,7 @@
           grid-template-columns: 250px minmax(0, 1fr);
         }
         .question-palette {
-          grid-template-columns: repeat(5, 1fr);
+          grid-template-columns: repeat(6, 1fr);
         }
       }
       @media (max-width: 720px) {
@@ -7908,10 +8116,17 @@
         .flashcards-head {
           align-items: start;
         }
+        .essay-grid,
         .flashcards-grid,
         .routine-list {
           grid-template-columns: 1fr;
         }
+        .essay-hero{grid-template-columns:1fr;padding:22px 18px}
+        .essay-hero-actions{justify-items:start}
+        .essay-hero-actions>div{text-align:left}
+        .essay-filter-group{grid-template-columns:1fr}
+        .essay-detail-grid{grid-template-columns:1fr}
+        .essay-steps{grid-template-columns:1fr 1fr}
         .flashcards-locked {
           align-items: flex-start;
           flex-wrap: wrap;
