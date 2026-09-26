@@ -4770,7 +4770,7 @@
         const n = k(q);
         return `<div class="calendar-tools"><button class="icon-btn" id="cal-prev">${h.left}</button><div class="calendar-title">${w(i, { month: "long", year: "numeric" })}</div><button class="icon-btn" id="cal-next">${h.right}</button></div>
     <div class="calendar-week"><span>dom</span><span>seg</span><span>ter</span><span>qua</span><span>qui</span><span>sex</span><span>sáb</span></div><div class="calendar-grid">${s}</div>
-    <div class="selected-date"><div class="selected-date-title">${w(M(q), { weekday: "long", day: "numeric", month: "long" })}</div>${n.length ? n.map((d) => `<div class="mini-session priority-${d.priority || "medium"}"><i class="dot ${d.priority || "medium"}"></i><strong>${p(d.subject)}</strong> ${p(d.title)} <span>${d.time}</span></div>`).join("") : '<div class="form-note">Nenhum bloco neste dia.</div>'}</div>`;
+    <div class="selected-date"><div class="selected-date-title">${w(M(q), { weekday: "long", day: "numeric", month: "long" })}</div>${n.length ? n.map((d) => `<div class="mini-session priority-${d.priority || "medium"}"><i class="dot ${d.priority || "medium"}"></i><strong>${p(d.subject)}</strong> ${p(d.title)} <span>${p(d.duration || "sem horário")}</span></div>`).join("") : '<div class="form-note">Nenhum bloco neste dia.</div>'}</div>`;
       }
       function T(e = "all") {
         const a = K(),
@@ -7885,6 +7885,7 @@
           display: block;
         }
       }
+      .session-actions{display:flex;align-items:center;gap:5px}.session-actions .icon-btn{min-width:30px;height:30px;padding:0;font-size:16px}
       .flashcards-section {
         margin-top: 22px;
       }
