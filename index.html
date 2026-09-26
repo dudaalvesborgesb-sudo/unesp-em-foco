@@ -3999,10 +3999,8 @@
             first.completedSessions,
             second.completedSessions,
           ),
-          customSessions: mergeArraysById(
-            first.customSessions,
-            second.customSessions,
-          ),
+          customSessions: mergeArraysById(first.customSessions, second.customSessions).filter((v) => !new Set([...(first.deletedCustomSessionIds || []), ...(second.deletedCustomSessionIds || [])]).has(v.id)),
+          deletedCustomSessionIds: [...new Set([...(first.deletedCustomSessionIds || []), ...(second.deletedCustomSessionIds || [])])],
           simulations: mergeArraysById(first.simulations, second.simulations),
           reviewPlans: mergeReviewPlans(first.reviewPlans, second.reviewPlans),
           phase2Checks: mergeTrueMaps(first.phase2Checks, second.phase2Checks),
@@ -4015,6 +4013,8 @@
       }
       function O(e) {
         return (
+          (e.deletedCustomSessionIds ||= []),
+          (e.customSessions ||= []),
           (e.reviewPlans ||= {}),
           (e.phase2Checks ||= {}),
           (e.phase2Sessions ||= []),
@@ -4384,7 +4384,7 @@
       }
       function k(e) {
         const a = (ae[e] || []).map((o) => fitBeforeClass(o, e)),
-          i = r.customSessions.filter((o) => o.date === e);
+          i = r.customSessions.filter((o) => o.date === e && !(r.deletedCustomSessionIds || []).includes(o.id)).map((o) => ({ ...o, custom: true }));
         return [...a, ...i];
       }
       function K() {
@@ -4666,7 +4666,7 @@
     </main>
   </div>
   <nav class="mobile-nav">${f("today", "Hoje", "home")}${f("content", "Conteúdos", "list")}${f("reviews", "Revisões", "repeat")}${f("essay", "Redação", "pen")}${f("phase2", "2ª fase", "pen")}${f("sims", "Simulados", "chart")}</nav>
-  <div class="modal-backdrop" id="session-modal"><div class="modal"><div class="modal-head"><h3>Adicionar bloco de estudo</h3><button class="close-btn" data-close-modal>×</button></div>${Pe()}</div></div>
+  <div class="modal-backdrop" id="session-modal"><div class="modal"><div class="modal-head"><h3 id="session-modal-title">Adicionar bloco de estudo</h3><button class="close-btn" data-close-modal>×</button></div>${Pe()}</div></div>
   <div class="modal-backdrop" id="finish-modal"><div class="modal"><div class="modal-head"><h3>Finalizar o simulado?</h3><button class="close-btn" data-close-finish>×</button></div><p class="modal-copy">Você respondeu <strong>${E()}</strong> de 90 questões. Depois de finalizar, o gabarito e a análise completa serão liberados.</p><div class="modal-actions"><button class="secondary-btn" data-close-finish>Continuar respondendo</button><button class="primary-btn" data-confirm-finish>Finalizar e corrigir</button></div></div></div>
   <div class="toast" id="toast"></div>`;
       }
@@ -4739,13 +4739,13 @@
       function ue(e) {
         return e.length
           ? e
-              .sort((a, i) => a.time.localeCompare(i.time))
+              .sort((a, i) => 0)
               .map(
                 (
                   a,
                 ) => `<div class="session priority-${a.priority || "medium"} ${a.event ? "exam-event" : ""} ${r.completedSessions[a.id] ? "done" : ""}">
-    <div class="session-time">${a.time}</div><div><div class="session-title">${p(a.title)}</div><div class="session-meta">${p(a.subject)} · ${p(a.duration)}</div></div>
-    ${a.event ? `<span class="exam-label">DATA DE PROVA</span>` : `<button class="check-btn ${r.completedSessions[a.id] ? "checked" : ""}" data-session="${a.id}" aria-label="Marcar bloco como concluído">${h.check}</button>`}</div>`,
+    <div class="session-time">${p(a.duration)}</div><div><div class="session-title">${p(a.title)}</div><div class="session-meta">${p(a.subject)} · ${p(a.duration)}</div></div>
+    ${a.event ? `<span class="exam-label">DATA DE PROVA</span>` : `<div class="session-actions">${a.custom ? `<button class="icon-btn" data-edit-session="${a.id}" aria-label="Editar ou mover bloco">✎</button><button class="icon-btn" data-delete-session="${a.id}" aria-label="Excluir bloco">♲</button>` : ""}<button class="check-btn ${r.completedSessions[a.id] ? "checked" : ""}" data-session="${a.id}" aria-label="Marcar bloco como concluído">${h.check}</button></div>`}</div>`,
               )
               .join("")
           : `<div class="empty-state"><div class="empty-icon">${h.check}</div><strong>Dia livre</strong><div>Use para descansar ou fazer uma revisão leve.</div></div>`;
@@ -5081,8 +5081,25 @@
       function Se(e) {
         return `<div class="sim-item"><div class="sim-score"><div><strong>${e.score}</strong><small>de 90</small></div></div><div class="sim-info"><strong>${p(e.name)}</strong><p>${w(M(e.date), { day: "2-digit", month: "short", year: "numeric" })}${e.notes ? ` · ${p(e.notes)}` : ""}</p><div class="sim-tags"><span>${Math.round((Number(e.score) / 90) * 100)}% de acertos</span>${e.essay !== "" ? `<span>Redação ${e.essay}/28</span>` : ""}</div></div><button class="delete-btn" data-delete-sim="${e.id}" aria-label="Excluir simulado">${h.trash}</button></div>`;
       }
-      function Pe() {
-        return `<form class="form-grid" id="session-form"><div class="field"><label>Data</label><input name="date" type="date" required value="${q}"></div><div class="field-pair"><div class="field"><label>Horário</label><input name="time" type="time" required value="15:30"></div><div class="field"><label>Duração</label><select name="duration"><option>30 min</option><option selected>45 min</option><option>50 min</option><option>1h</option><option>1h 30</option></select></div></div><div class="field"><label>Matéria</label><input name="subject" required placeholder="Ex.: Matemática"></div><div class="field"><label>Conteúdo</label><input name="title" required placeholder="Ex.: Lista de geometria plana"></div><button class="primary-btn" type="submit">Adicionar ao calendário</button></form>`;
+      let editingCustomSessionId = null;
+      function bindSessionForm() {
+        document.querySelector("#session-form")?.addEventListener("submit", (e) => {
+          e.preventDefault();
+          const data = new FormData(e.currentTarget);
+          const values = { date: data.get("date"), duration: data.get("duration"), subject: data.get("subject"), title: data.get("title"), priority: "medium" };
+          if (editingCustomSessionId) {
+            const existing = r.customSessions.find((item) => item.id === editingCustomSessionId);
+            if (existing) Object.assign(existing, values);
+          } else r.customSessions.push({ id: `custom-${Date.now()}`, ...values });
+          editingCustomSessionId = null;
+          l();
+          document.querySelector("#session-modal").classList.remove("open");
+          u();
+          b("Bloco salvo no calendário.");
+        });
+      }
+      function Pe(session = null) {
+        return `<form class="form-grid" id="session-form"><div class="field"><label>Data</label><input name="date" type="date" required value="${session?.date || q}"></div><div class="field"><label>Duração</label><select name="duration"><option ${session?.duration === "30 min" ? "selected" : ""}>30 min</option><option ${session?.duration === "45 min" || !session ? "selected" : ""}>45 min</option><option ${session?.duration === "50 min" ? "selected" : ""}>50 min</option><option ${session?.duration === "1h" ? "selected" : ""}>1h</option><option ${session?.duration === "1h 30" ? "selected" : ""}>1h 30</option></select></div></div><div class="field"><label>Matéria</label><input name="subject" required placeholder="Ex.: Matemática" value="${session ? p(session.subject) : ""}"></div><div class="field"><label>Conteúdo</label><input name="title" required placeholder="Ex.: Lista de geometria plana" value="${session ? p(session.title) : ""}"></div><button class="primary-btn" type="submit">${session ? "Salvar alterações" : "Adicionar ao calendário"}</button></form>`;
       }
       function u() {
         (clearInterval(z),
@@ -5231,27 +5248,26 @@
               e.target.id === "session-modal" &&
                 e.currentTarget.classList.remove("open");
             }),
-          document
-            .querySelector("#session-form")
-            ?.addEventListener("submit", (e) => {
-              e.preventDefault();
-              const a = new FormData(e.currentTarget);
-              (r.customSessions.push({
-                id: `custom-${Date.now()}`,
-                date: a.get("date"),
-                time: a.get("time"),
-                duration: a.get("duration"),
-                subject: a.get("subject"),
-                title: a.get("title"),
-                priority: "medium",
-              }),
-                l(),
-                document
-                  .querySelector("#session-modal")
-                  .classList.remove("open"),
-                u(),
-                b("Bloco adicionado ao calendário."));
-            }),
+          bindSessionForm(),
+          document.querySelectorAll("[data-edit-session]").forEach((button) => button.addEventListener("click", () => {
+            editingCustomSessionId = button.dataset.editSession;
+            const session = r.customSessions.find((item) => item.id === editingCustomSessionId);
+            if (!session) return;
+            const modal = document.querySelector("#session-modal");
+            modal.querySelector("#session-modal-title").textContent = "Editar bloco de estudo";
+            modal.querySelector(".modal form")?.remove();
+            modal.querySelector(".modal").insertAdjacentHTML("beforeend", Pe(session));
+            modal.classList.add("open");
+            bindSessionForm();
+          })),
+          document.querySelectorAll("[data-delete-session]").forEach((button) => button.addEventListener("click", () => {
+            const id = button.dataset.deleteSession;
+            if (!r.deletedCustomSessionIds.includes(id)) r.deletedCustomSessionIds.push(id);
+            r.customSessions = r.customSessions.filter((item) => item.id !== id);
+            delete r.completedSessions[id];
+            delete r.reviewPlans[reviewSessionId(id)];
+            l(); u(); b("Bloco excluído.");
+          })),
           document
             .querySelectorAll("[data-toggle-subject]")
             .forEach((e) =>
