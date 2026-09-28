@@ -4861,8 +4861,8 @@
                 ? {
                     id: `auto-${i}-${a}`,
                     topic: a,
-                    q: `Explique, sem consultar: ${o.title}.`,
-                    a: "Confira se você definiu o conceito, explicou como ele funciona e deu um exemplo ou aplicação. Depois compare com seu material.",
+                    q: `Sobre ${o.title}: qual é a ideia central, como ela funciona e como pode aparecer em uma questão da UNESP ou do ENEM?`,
+                    a: `Resposta: explique o conteúdo “${o.title}” com suas palavras, incluindo a definição, os pontos principais e um exemplo. Em seguida, confira no material quais informações específicas faltaram e complete sua resposta.`,
                   }
                 : null;
             })
@@ -4911,9 +4911,13 @@
   </div>
   <div class="review-guide"><div>${h.repeat}</div><p><strong>Como funciona:</strong> marcou a aula do dia como feita, exatamente o que você estudou aparece aqui. O checklist continua servindo para marcar o tópico completo e liberar seus flashcards.</p></div>
   <div class="review-board">${I.map((s) => {
-    const n = [...e].sort((c, m) =>
-        L(c.plan, s).due.localeCompare(L(m.plan, s).due),
-      ),
+    const n = [...e].sort((c, m) => {
+        const rank = (item) => {
+          const status = L(item.plan, s).className;
+          return status === "today" ? 0 : status === "overdue" ? 1 : status === "upcoming" ? 2 : 3;
+        };
+        return rank(c) - rank(m) || L(c.plan, s).due.localeCompare(L(m.plan, s).due);
+      }),
       d = n.filter((c) => !c.plan.checks?.[s.key]).length;
     return `<section class="review-column"><div class="review-column-head"><div><span>${s.short}</span><h3>${s.label}</h3></div><strong>${d} pendente${d === 1 ? "" : "s"}</strong></div><div class="review-list">${n.map((c) => ve(c, s)).join("")}</div></section>`;
   }).join("")}</div>`
@@ -5102,11 +5106,13 @@
         return `<form class="form-grid" id="session-form"><div class="field"><label>Data</label><input name="date" type="date" required value="${session?.date || q}"></div><div class="field"><label>Duração</label><select name="duration"><option ${session?.duration === "30 min" ? "selected" : ""}>30 min</option><option ${session?.duration === "45 min" || !session ? "selected" : ""}>45 min</option><option ${session?.duration === "50 min" ? "selected" : ""}>50 min</option><option ${session?.duration === "1h" ? "selected" : ""}>1h</option><option ${session?.duration === "1h 30" ? "selected" : ""}>1h 30</option></select></div></div><div class="field"><label>Matéria</label><input name="subject" required placeholder="Ex.: Matemática" value="${session ? p(session.subject) : ""}"></div><div class="field"><label>Conteúdo</label><input name="title" required placeholder="Ex.: Lista de geometria plana" value="${session ? p(session.title) : ""}"></div><button class="primary-btn" type="submit">${session ? "Salvar alterações" : "Adicionar ao calendário"}</button></form>`;
       }
       function u() {
+        const savedScroll = window.scrollY;
         (clearInterval(z),
           (document.querySelector("#app").innerHTML = le()),
           ke(),
           W(),
-          ce());
+          ce(),
+          window.scrollTo(0, savedScroll));
       }
       function ke() {
         const e = {
