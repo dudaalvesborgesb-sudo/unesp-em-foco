@@ -4993,11 +4993,13 @@
             "art-2": [["Por que os movimentos artísticos não surgem isoladamente?", "Dialogam com contextos históricos, mudanças técnicas, debates culturais e movimentos anteriores."], ["O que observar ao comparar movimentos artísticos?", "Temas, materiais, técnicas, composição, relação com o público e contexto histórico."]],
             "art-3": [["Quais elementos observar na leitura de uma obra?", "Composição, cor, linha, forma, técnica, tema, contexto e efeitos produzidos no observador."], ["Como justificar uma interpretação de obra?", "Apoie a leitura em elementos visuais concretos e relacione-os ao contexto sem tratar a interpretação como única possível."]]
           },
-          generated = completed
-            .filter((id) => !bankTopics.has(id))
-            .flatMap((topic) => (specific[topic] || []).map(([q, answer], index) => ({
+          generated = completed.flatMap((topic) => {
+            const already = flashcardsBank.filter((card) => card.topic === topic).length;
+            const needed = Math.max(0, Math.min(2, 2 - already));
+            return (specific[topic] || []).slice(0, needed).map(([q, answer], index) => ({
               id: `auto-${topic}-${index}`, topic, q, a: answer,
-            }))),
+            }));
+          }),
           cards = [...existing, ...generated];
         return `<section class="flashcards-section"><div class="flashcards-head"><div><span class="eyebrow">Prática de recuperação</span><h3>Flashcards dos conteúdos estudados</h3><p>Marcou um tópico como concluído? As perguntas dele aparecem aqui. Toque no cartão para revelar a resposta.</p></div><strong>${cards.length} liberado${cards.length === 1 ? "" : "s"}</strong></div>${
           cards.length
