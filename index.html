@@ -4855,18 +4855,25 @@
           i = new Set(flashcardsBank.map((a) => a.topic)),
           o = e
             .filter((a) => !i.has(a))
-            .map((a, i) => {
-              const o = se(a);
-              return o
-                ? {
-                    id: `auto-${i}-${a}`,
-                    topic: a,
-                    q: `Sobre ${o.title}: qual é a ideia central, como ela funciona e como pode aparecer em uma questão da UNESP ou do ENEM?`,
-                    a: `Resposta: explique o conteúdo “${o.title}” com suas palavras, incluindo a definição, os pontos principais e um exemplo. Em seguida, confira no material quais informações específicas faltaram e complete sua resposta.`,
-                  }
-                : null;
-            })
-            .filter(Boolean),
+            .flatMap((a, i) => {
+              const specific = {
+                "fis-2": [
+                  ["O que é trabalho de uma força constante e como calculá-lo?", "O trabalho é a energia transferida por uma força durante um deslocamento. Para força constante: W = F·d·cos(θ), em que θ é o ângulo entre força e deslocamento. A unidade é o joule (J)."],
+                  ["Qual é a relação entre trabalho resultante e energia cinética?", "Pelo teorema trabalho–energia, o trabalho da força resultante é igual à variação da energia cinética: Wresultante = ΔEc = Ec final − Ec inicial. Trabalho positivo aumenta a energia cinética; trabalho negativo a diminui."],
+                  ["Quando o trabalho de uma força é positivo, negativo ou nulo?", "É positivo quando a força tem componente no sentido do deslocamento; negativo quando tem componente contrário; e nulo quando a força é perpendicular ao deslocamento ou não há deslocamento."],
+                  ["Como calcular a energia cinética e a energia potencial gravitacional?", "Energia cinética: Ec = mv²/2. Próximo à superfície da Terra, energia potencial gravitacional: Epg = mgh, em que h é a altura em relação ao nível de referência escolhido."],
+                  ["O que afirma a conservação da energia mecânica?", "Quando só atuam forças conservativas, a soma Ec + Ep permanece constante. Com atrito ou outra força não conservativa, parte da energia mecânica pode ser transformada, por exemplo, em energia térmica."],
+                  ["O que é potência média e qual é sua unidade?", "É a rapidez com que o trabalho é realizado ou a energia é transferida: P = W/Δt. A unidade é o watt (W), equivalente a joule por segundo."],
+                  ["Um corpo de 2 kg parte do repouso e recebe trabalho resultante de 36 J. Qual é sua velocidade final?", "Pelo teorema trabalho–energia: 36 = ΔEc = mv²/2. Assim, 36 = 2v²/2 = v², portanto v = 6 m/s."]
+                ]
+              }[a] || [];
+              return specific.map(([q, answer], j) => ({
+                id: `auto-${i}-${a}-${j}`,
+                topic: a,
+                q,
+                a: answer,
+              }));
+            }),
           s = [...a, ...o];
         return `<section class="flashcards-section"><div class="flashcards-head"><div><span class="eyebrow">Prática de recuperação</span><h3>Flashcards dos conteúdos estudados</h3><p>Marcou um tópico como concluído? As perguntas dele aparecem aqui. Toque no cartão para revelar a resposta.</p></div><strong>${s.length} liberado${s.length === 1 ? "" : "s"}</strong></div>${
           s.length
