@@ -3830,6 +3830,7 @@
           simulations: [],
           reviewPlans: {},
           phase2Checks: {},
+          flashcardChecks: {},
           phase2Sessions: [],
           essayProgress: {},
           activeView: "today",
@@ -4013,6 +4014,8 @@
       }
       function O(e) {
         return (
+          (e.flashcardChecks ||= {}),
+
           (e.deletedCustomSessionIds ||= []),
           (e.customSessions ||= []),
           (e.reviewPlans ||= {}),
@@ -5005,7 +5008,8 @@
           cards.length
             ? `<div class="flashcards-grid">${cards.map((card) => {
                 const subject = se(card.topic);
-                return `<details class="flashcard" style="--flash-color:${subject?.color || "#7c59a8"}"><summary><span>${p(subject?.subject || "Revisão")}</span><strong>${p(card.q)}</strong><small>Ver resposta</small></summary><div><span>Resposta</span><p>${p(card.a)}</p></div></details>`;
+                const done = !!r.flashcardChecks[card.id];
+                return `<details class="flashcard ${done ? "flashcard-done" : ""}" style="--flash-color:${subject?.color || "#7c59a8"}"><summary><span>${p(subject?.subject || "Revisão")}</span><strong style="${done ? "text-decoration:line-through;opacity:.55" : ""}">${p(card.q)}</strong><small><input type="checkbox" class="flashcard-check" data-flashcard-check="${p(card.id)}" ${done ? "checked" : ""}> Respondido</small></summary><div><span>Resposta</span><p>${p(card.a)}</p></div></details>`;
               }).join("")}</div>`
             : `<div class="flashcards-locked"><div>${h.repeat}</div><p><strong>Seus flashcards vão aparecer aqui.</strong><br>Conclua um conteúdo no checklist para liberar perguntas daquela matéria.</p><button class="primary-btn" data-go-content>Ir para conteúdos</button></div>`
         }</section>`;
@@ -5412,6 +5416,17 @@
                 e.closest(".subject").classList.toggle("open"),
               ),
             ),
+          document.querySelectorAll("[data-flashcard-check]").forEach((e) =>
+            e.addEventListener("click", (event) => event.stopPropagation()),
+          ),
+          document.querySelectorAll("[data-flashcard-check]").forEach((e) =>
+            e.addEventListener("change", () => {
+              r.flashcardChecks ||= {};
+              r.flashcardChecks[e.dataset.flashcardCheck] = e.checked;
+              l();
+              u();
+            }),
+          ),
           document.querySelectorAll("[data-topic]").forEach((e) =>
             e.addEventListener("change", () => {
               J(e.dataset.topic, e.checked);
