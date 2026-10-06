@@ -3651,6 +3651,7 @@
         N = {
           completedTopics: {},
           completedSessions: {},
+          streakFloor: 12,
           customSessions: [],
           simulations: [],
           reviewPlans: {},
@@ -4237,7 +4238,7 @@
           else if (o !== g(new Date()) && s.length) break;
           a.setDate(a.getDate() - 1);
         }
-        return e;
+        return Math.max(e, Number(r.streakFloor || 0));
       }
       function ne() {
         const e = new Date(2026, 10, 22),
